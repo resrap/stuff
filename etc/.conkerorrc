@@ -1,0 +1,63 @@
+require("new-tabs.js");
+require("session.js");
+require("clicks-in-new-buffer.js");
+
+// default directory for downloads and shell commands.
+cwd = get_home_directory();
+cwd.append("Downloads/");
+
+// load urls from the command line in new buffers instead
+// of new windows.
+url_remoting_fn = load_url_in_new_buffer;
+
+// the default page for new buffers.
+homepage = "www.google.com/ncr";
+
+// use vi as external editor.
+editor_shell_command = "urxvt -e emacs -nw";
+
+// view source in your editor.
+view_source_use_external_editor = true;
+
+// Don't let kill-buffer close the window
+can_kill_last_buffer = false;
+
+// Set to either OPEN_NEW_BUFFER or OPEN_NEW_BUFFER_BACKGROUND
+clicks_in_new_buffer_target = OPEN_NEW_BUFFER_BACKGROUND; // Now buffers open in background.
+
+define_webjump("github", "http://github.com/%s");
+define_webjump("reddit", "http://www.reddit.com");
+
+mouse_back = 1;
+mouse_forward = 2;
+
+{
+    let navigate_click = function(event) {
+        let w = get_recent_conkeror_window().buffers.current.web_navigation;
+        if (event.button == mouse_back && w.canGoBack) w.goBack();
+        else if (event.button == mouse_forward && w.canGoForward) w.goForward();
+        else return;
+        event.stopPropagation();
+    }
+
+    let install_handler = function (buffer) {
+        buffer.browser.addEventListener("click", navigate_click, true);
+    }
+
+    add_hook("create_buffer_hook", install_handler);
+}
+
+// Set to 0 = left mouse, 1 = middle mouse, 2 = right mouse
+clicks_in_new_buffer_button = 2; //  Now right mouse follows links in new buffers.
+
+add_hook("window_before_close_hook",
+         function () {
+             var w = get_recent_conkeror_window();
+             var result = (w == null) ||
+                 "y" == (yield w.minibuffer.read_single_character_option(
+                     $prompt = "Quit Conkeror? (y/n)",
+                     $options = ["y", "n"]));
+             yield co_return(result);
+         });
+
+
